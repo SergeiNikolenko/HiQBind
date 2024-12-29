@@ -691,7 +691,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input', dest='input', help='input csv')
-    parser.add_argument('-o', '--output', dest='output', help='output directory')
+    parser.add_argument('-d', '--output', dest='output', help='output directory')
     parser.add_argument('--poly', dest='poly', action='store_true', help='if polymer csv')
     args = parser.parse_args()
 
