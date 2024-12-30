@@ -53,7 +53,20 @@ I recommend [**mamba**](https://mamba.readthedocs.io/en/latest/installation/mamb
   wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh"
   bash Miniforge3-Linux-x86_64.sh
   ```
-- `conda activate PDBBindOPTenv`
+- Navigate to `${HOME}` root, you will see new `miniforge3` folder alongside your `miniconda3` folder. In `${HOME}/miniforge3/etc/profile.d/`, you will see `conda.sh` and `mamba.sh`, `source` them
+  ```
+  source /${HOME}/miniforge3/etc/profile.d/conda.sh
+  source /${HOME}/miniforge3/etc/profile.d/mamba.sh
+  ```
+- At this moment, if we check `conda env list`,we will see
+  ```
+  # conda environments:
+  #
+                         /${HOME}/miniconda3
+                         /${HOME}/miniconda3/envs/PDBBindOPTenv
+  base                   /${HOME}/miniforge3
+  ```
+- `conda activate /${HOME}/miniconda3/envs/PDBBindOPTenv`
 - `mamba install -c conda-forge openmmforcefields`
 - `mamba install -c conda-forge openff-toolkit`
 - `mamba install -c conda-forge pdbfixer`
