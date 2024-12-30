@@ -42,3 +42,21 @@ This will take about one day on a 256-core CPU. If you have more nodes, consider
 ```bash
 python gather.py -i ../pre_process/BioLiP_bind_sm.csv -d ../raw_data/biolip2_opt -o ../figshare/biolip2_opt/biolip2_opt.csv
 ```
+## Requirements
+After `conda create -n PDBBindOPTenv`, most of packages can be directly installed using `pip install`, such as `pip install gemmi`,`pip install rdkit-pypi`, `pip install openmm`. In my experience (HPC, Linux, Python==3.11.9 environment), some packages are not easily installed using `conda install conda-forge` for new people in this area, and they are **openmmforcefields**, **openff**, **pdbfixer** and **openbabel**. 
+
+I recommend [**mamba**](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html) (mam**b**a, not mam**d**a). 
+
+- Install [**Miniforge**](https://github.com/conda-forge/miniforge)
+  ```
+  # in my case, I install
+  wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh"
+  bash Miniforge3-Linux-x86_64.sh
+  ```
+- `conda activate PDBBindOPTenv`
+- `mamba -c conda-forge openmmforcefields`
+- `mamba -c conda-forge openff-toolkit`
+- `mamba -c conda-forge pdbfixer`
+- `mamba -c conda-forge openbabel`
+    
+  
