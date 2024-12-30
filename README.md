@@ -54,9 +54,9 @@ I recommend [**mamba**](https://mamba.readthedocs.io/en/latest/installation/mamb
   bash Miniforge3-Linux-x86_64.sh
   ```
 - `conda activate PDBBindOPTenv`
-- `mamba -c conda-forge openmmforcefields`
-- `mamba -c conda-forge openff-toolkit`
-- `mamba -c conda-forge pdbfixer`
-- `mamba -c conda-forge openbabel`
+- `mamba install -c conda-forge openmmforcefields`
+- `mamba install -c conda-forge openff-toolkit`
+- `mamba install -c conda-forge pdbfixer`
+- `mamba install -c conda-forge openbabel`
     
   
