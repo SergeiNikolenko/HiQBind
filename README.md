@@ -26,7 +26,7 @@ This repository contains scripts of PDBBind-Opt workflow, which organizes a bunc
 
 BioLiP2-Opt datasets prepared by PDBBind-Opt workflow can be found in this [Figshare repoistory](https://figshare.com/collections/PDBBind_Optimization_to_Create_a_High-Quality_Protein-Ligand_Binding_Dataset_for_Binding_Affinity_Prediction/7520133/1).
 
-We are still trying to find the best way to release PDBBind-Opt, but you can still reproduce the PDBBind-Opt dataset following the instructions below.
+For some reasons, the PDBBind-Opt dataset is not diectly accessible now but we will find the best way to release it soon. Users can reproduce the PDBBind-Opt dataset following the instructions below.
 
 ## How to reconstruct PDBBind-Opt and BioLiP-Opt
 
