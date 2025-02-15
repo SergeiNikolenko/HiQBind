@@ -35,7 +35,7 @@ conda activate hiqbind-wf
 HiQBind datasets prepared by HiQBind workflow can be found in this [Figshare repoistory](https://figshare.com/collections/PDBBind_Optimization_to_Create_a_High-Quality_Protein-Ligand_Binding_Dataset_for_Binding_Affinity_Prediction/7520133/1).
 The HiQBind dataset is not diectly accessible now but we will find the best way to release it soon. Users can reproduce the HiQBind dataset following the instructions below.
 
-## How to reconstruct HiQBind and PDBBind
+## How to reconstruct HiQBind and Optimized PDBBind
 
 Due to license agreement, we are not able to directly provide the optimized PDBBind dataset, but users can follow the processes listed below to perform optimization on PDBBind using this workflow.
 
