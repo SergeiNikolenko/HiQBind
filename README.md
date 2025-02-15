@@ -1,15 +1,23 @@
-# PDBBind-Opt Workflow
+# HiQBind Workflow
 
 [![arxiv](https://img.shields.io/badge/arXiv-2411.01223-blue)](https://arxiv.org/abs/2411.01223)
 
-This repository contains scripts of PDBBind-Opt workflow, which organizes a bunch of open-source softwares to probe and fix structural problems in PDBBind.
+This repository contains scripts of HiQBind workflow, which organizes a bunch of open-source softwares to probe and fix structural problems in existing Protein-Ligand Datasets.
 
 ![workflow](assets/workflow.svg)
 
+## Setting up and Installation
+
+We recommend using conda environment to install dependencies of this library. Please install (or load) conda and then proceed with the following commands:
+```bash
+conda env create -f env.yml
+conda activate hiqbind-wf
+```  
+
 ## Code availability
 
-+ `pre_process/`: Scripts to prepare PDBBind and BioLiP dataset (identifying ligands and extract binding affinity data)
-+ `workflow/`: Codes for PDBBind-Opt worflow
++ `pre_process/`: Scripts to prepare inputs for HiQBind dataset creation and PDBBind optimization (identifying ligands and extract binding affinity data).
++ `workflow/`: Codes for HiQBind-WF worflow
   - `dimorphite_dl`: Package to assign protonation states. We modified the `site_substructures.smarts` to make the rules easier.
   - `fix_ligand.py`: LigandFixer module
   - `fix_protein.py`: ProteinFixer module
@@ -19,57 +27,40 @@ This repository contains scripts of PDBBind-Opt workflow, which organizes a bunc
   - `fix_polymer.py`: Functions to fix polymer ligands
   - `maual_smiles.json`: Manually corrected reference SMILES
   - `building_blocks.csv`: SMILES of alpha-amino acids and common N/C terminal caps. Used to create reference SMILES for polymers
-+ `error_fix/`: Contains some error analysis
-+ `figshare/`: Metadata of BioLiP2-Opt and PDBBind-Opt dumped in Figshare repo.
++ `error_fix/`: Contains list of PDB IDs discarded by the workflow when preparing HiQBind and optimizing PDBBind
++ `figshare/`: Metadata of HiQBind dumped in Figshare repo.
 
 ## Dataset availability
 
-BioLiP2-Opt datasets prepared by PDBBind-Opt workflow can be found in this [Figshare repoistory](https://figshare.com/collections/PDBBind_Optimization_to_Create_a_High-Quality_Protein-Ligand_Binding_Dataset_for_Binding_Affinity_Prediction/7520133/1).
+HiQBind datasets prepared by HiQBind workflow can be found in this [Figshare repoistory](https://doi.org/10.6084/m9.figshare.27430305).
+The HiQBind dataset is not diectly accessible now but we will find the best way to release it soon. Users can reproduce the HiQBind dataset following the instructions below.
 
-For some reasons, the PDBBind-Opt dataset is not diectly accessible now but we will find the best way to release it soon. Users can reproduce the PDBBind-Opt dataset following the instructions below.
+In this repository, we provide the [metadata](figshare/hiqbind_metadata.csv) of HiQBind and [list of PDB IDs](error_fix/) discarded by the workflow when preparing HiQBind and optimizing PDBBind.
 
-## How to reconstruct PDBBind-Opt and BioLiP-Opt
+## How to reconstruct HiQBind and Optimized PDBBind
 
-+ **Step 1**: Download PDBBind index file from their official website. Run `download.sh` in the `pre_process` to download BioLiP2 dataset
-+ **Step 2**: Run `pre_process/create_dataset_csv.ipynb` to extract binding affinity and identifying ligands. This will give the three csv files
+Due to license agreement, we are not able to directly provide the optimized PDBBind dataset, but users can follow the processes listed below to perform optimization on PDBBind or reproduce HiQBind using this workflow.
+
++ **Step 1**: Download PDBBind index file from their official website.
++ **Step 2a**: Run `pre_process/create_pdbbind_input.ipynb` to extract binding affinity and identifying ligands for PDBBind-Opt. This will give the two csv files: `PDBBind_poly.csv` and `PDBBind_sm.csv`
++ **Step 2b**: Run `pre_process/create_hiqbind_input.ipynb` to extract binding affinity and identifying ligands for HiQBind. This will give the two csv files: `hiq_sm.csv` and `hiq_poly.csv`. Actually, we have already provided these two csv files in `pre_process` directory.
 + **Step 3**: Go to the `workflow` and use the following command to run the workflow
 ```bash
+cd workflow
 mkdir ../raw_data
-python procees.py -i ../pre_process/BioLiP_bind_sm.csv -d ../raw_data/biolip2_opt
-python procees.py -i ../pre_process/PDBBind_poly.csv -d ../raw_data/pdbbind_opt_poly --poly
+python procees.py -i ../pre_process/hiq_sm.csv -d ../raw_data/hiqbind_sm
+python procees.py -i ../pre_process/hiq_poly.csv -d ../raw_data/hiqbind_poly --poly
+```
+Alternatively, for processing PDBBind, use these codes instead.
+```bash
 python procees.py -i ../pre_process/PDBBind_sm.csv -d ../raw_data/pdbbind_opt_sm
+python procees.py -i ../pre_process/PDBBind_poly.csv -d ../raw_data/pdbbind_opt_poly --poly
 ```
 This will take about one day on a 256-core CPU. If you have more nodes, considering split the input csv file to several chunks and run them in parallel. When the workflow finish, in the output directory, each PDBID will have a folder and if the workflow succeed on this PDBID, there will be a file named `done.tag` under its folder, otherwise ther will be a file named `err`. 
 + **Step 4**: Run the `gather.py` to create metadata files, for example:
 ```bash
-python gather.py -i ../pre_process/BioLiP_bind_sm.csv -d ../raw_data/biolip2_opt -o ../figshare/biolip2_opt/biolip2_opt.csv
+python gather.py -i ../pre_process/PDBBind_sm.csv -d ../raw_data/pdbbind_opt_sm -o ../figshare/pdbbind_opt_sm_metadata.csv
+python gather.py -i ../pre_process/PDBBind_poly.csv -d ../raw_data/pdbbind_opt_poly -o ../figshare/pdbbind_opt_poly_metadata.csv
+python gather.py -i ../pre_process/hiq_sm.csv -d ../raw_data/hiqbind_sm -o ../figshare/hiqbind_sm_metadata.csv
+python gather.py -i ../pre_process/hiq_poly.csv -d ../raw_data/hiqbind_poly -o ../figshare/hiqbind_poly_metadata.csv
 ```
-## Requirements
-After `conda create -n PDBBindOPTenv`, most of packages can be directly installed using `pip install`, such as `pip install gemmi`,`pip install rdkit-pypi`, `pip install openmm`. In my experience (HPC, Linux, Python==3.11.9 environment), some packages are not easily installed using `conda install conda-forge` for new people in this area, and they are **openmmforcefields**, **openff**, **pdbfixer** and **openbabel**. 
-
-I recommend [**mamba**](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html) (mam**b**a, not mam**d**a). 
-
-- Install [**Miniforge**](https://github.com/conda-forge/miniforge)
-  ```
-  # in my case, I install
-  wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh"
-  bash Miniforge3-Linux-x86_64.sh
-  ```
-- Navigate to `${HOME}` root, you will see new `miniforge3` folder alongside your `miniconda3` folder. In `${HOME}/miniforge3/etc/profile.d/`, you will see `conda.sh` and `mamba.sh`, `source` them
-  ```
-  source /${HOME}/miniforge3/etc/profile.d/conda.sh
-  source /${HOME}/miniforge3/etc/profile.d/mamba.sh
-  ```
-- At this moment, if we check `conda env list`,we will see
-  ```
-  # conda environments:
-  #
-                         /${HOME}/miniconda3
-                         /${HOME}/miniconda3/envs/PDBBindOPTenv
-  base                   /${HOME}/miniforge3
-  ```
-- `conda activate /${HOME}/miniconda3/envs/PDBBindOPTenv`
-- `mamba install -c conda-forge openmmforcefields`
-- `mamba install -c conda-forge openff-toolkit`
-- `mamba install -c conda-forge pdbfixer`
-- `mamba install -c conda-forge openbabel`
