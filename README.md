@@ -73,5 +73,3 @@ I recommend [**mamba**](https://mamba.readthedocs.io/en/latest/installation/mamb
 - `mamba install -c conda-forge openff-toolkit`
 - `mamba install -c conda-forge pdbfixer`
 - `mamba install -c conda-forge openbabel`
-    
-  

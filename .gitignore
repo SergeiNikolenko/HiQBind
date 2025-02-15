@@ -165,3 +165,10 @@ BioLiP.txt*
 edge_cases/
 nohup.out
 *.tar.gz
+tar.py
+_files
+figshare/pdbbind*
+error_fix/PDBBind*.md
+debug/
+pre_process/BindingMOAD*.csv
+pre_process/PDBBind_*.csv

@@ -31,6 +31,24 @@ standardResidues = [
     'A', 'G', 'C', 'U', 'I', 'DA', 'DG', 'DC', 'DT', 'DI'
 ]
 
+VERBOSE = False
+
+# Ligands with elements other than this list will be discarded
+COMMON_ELEMENTS = ['H', 'C', 'N', 'O', 'F', 'P', 'S', 'Cl', 'Br', 'I']
+# Ligands with less than 4 heavy atoms will be discarded
+MAX_HEAVY_ATOMS = 4
+# Ligands with distances < 2.0 Angstrom to the protein will be discarded
+STERIC_CLASH_THRESH = 2.0
+# Chains with no. of residues between 2-20 will be considered as a "ligand"
+MIN_NUM_RES_POLY = 2
+MAX_NUM_RES_POLY = 20
+# Number of missing residues larger than this value will not be added
+MAX_ADD_MISSING_RES = 10
+# Chains closer than 10 Angstrom will be included
+BINDING_CUTOFF: float = 10.0
+# HETATMs closer than 4 Angstrom to a chain will also be included
+HETATM_CUTOFF: float = 4.0
+
 
 def mmcif_corrector(value, type = str):
     if value == '?': return None
@@ -378,13 +396,12 @@ def find_ligand_residues(topology: app.Topology, ligand_chain: str, ligand_resid
 
 def process_everything(
     pdb_id: str, 
-    ligand_id: Optional[str] = None, 
+    ligand_id: Union[None, str, List[str]] = None, 
     ligand_info: Optional[List[Tuple[str, List[int]]]] = None, 
     dataset_dir: Optional[os.PathLike] = '../raw_data',
-    binding_cutoff: float = 10.0, 
-    hetatm_cutoff: float = 4.0,
+    binding_cutoff: float = BINDING_CUTOFF, 
+    hetatm_cutoff: float = HETATM_CUTOFF,
     find_connected_ligand_residues: bool = True,
-    max_num_residues: int = 20,
 ):
     """
     Run process workflow
@@ -398,6 +415,7 @@ def process_everything(
         os.mkdir(folder)
 
     download_pdb_cif(pdb_id, folder)
+    get_rcsb_data(pdb_id, os.path.join(folder, 'rcsb_data.json'))
     
     pdb_file = os.path.join(folder, f'{pdb_id}.pdb')
     cif_file = os.path.join(folder, f'{pdb_id}.cif')
@@ -421,14 +439,15 @@ def process_everything(
     if ligand_info is None:
         ligand_info = []
         if ligand_id:
+            ligand_id = ligand_id if isinstance(ligand_id, list) else [ligand_id]
             for residue in struct.topology.residues():
-                if residue.name == ligand_id:
+                if residue.name in ligand_id:
                     ligand_info.append([residue.chain.id, [f'{residue.id}{residue.insertionCode}'.strip()]])
         else:
             # Use for polymer ligand, such as peptides, polysaccharides
             # Try to use sequence information
             for chainId, seq in sequences.items():
-                if len(seq) > max_num_residues or len(seq) < 2:
+                if len(seq) > MAX_NUM_RES_POLY or len(seq) < MIN_NUM_RES_POLY:
                     continue
                 resnums = []
                 for residue in struct.topology.residues():
@@ -439,7 +458,7 @@ def process_everything(
             if len(ligand_info) == 0:
                 graph = create_residue_connection_graph(struct.topology)
                 for subgraph in nx.connected_components(graph):
-                    if len(subgraph) > 20 or len(subgraph) < 2:
+                    if len(subgraph) > MAX_NUM_RES_POLY or len(subgraph) < MIN_NUM_RES_POLY:
                         continue
                     residues = list(subgraph)
                     resnums = [f'{r.id}{r.insertionCode}'.strip() for r in residues]
@@ -448,7 +467,7 @@ def process_everything(
 
     ligand_residues_list = []
     for chain, residue_numbers in ligand_info:
-        ligand_residues = find_ligand_residues(struct.topology, chain, residue_numbers, max_num_residues=20, find_connected=find_connected_ligand_residues)
+        ligand_residues = find_ligand_residues(struct.topology, chain, residue_numbers, max_num_residues=MAX_NUM_RES_POLY, find_connected=find_connected_ligand_residues)
         ligand_residues_list.append(ligand_residues)
     
     
@@ -473,13 +492,14 @@ def process_everything(
     for ligand_residues in ligand_residues_list:
         # Rare elements - raise an error
         ligand_heavy_atoms = []
-        common_elements = ['H', 'C', 'N', 'O', 'F', 'P', 'S', 'Cl', 'Br', 'I']
         for residue in ligand_residues:
             for atom in residue.atoms():
-                if atom.element.symbol not in common_elements:
+                if atom.element.symbol not in COMMON_ELEMENTS:
                     raise RuntimeError(f'Rare element in ligand: {atom.element.symbol}')
                 if atom.element.symbol != 'H':
                     ligand_heavy_atoms.append(atom)
+        if len(ligand_heavy_atoms) < MAX_HEAVY_ATOMS:
+            raise RuntimeError(f"Too few #heavy atoms in ligand: {ligand_heavy_atoms}")
                 
         # Get some info
         ligand_residues.sort(key=lambda res: res.index)
@@ -516,7 +536,7 @@ def process_everything(
             dist_mat = cdist(ligand_positions, chain_positions)
             min_dist = np.min(dist_mat) * 10
             argmin = np.unravel_index(np.argmin(dist_mat), dist_mat.shape)
-            assert min_dist >= 2.0, f"Steric clash (dist. {min_dist:.2f}) observed between {ligand_heavy_atoms[argmin[0]]} and {chain_heavy_atoms[argmin[1]]}"
+            assert min_dist >= STERIC_CLASH_THRESH, f"Steric clash (dist. {min_dist:.2f}) observed between {ligand_heavy_atoms[argmin[0]]} and {chain_heavy_atoms[argmin[1]]}"
 
             if min_dist < binding_cutoff:
                 chains_include.add(chain_id)
@@ -566,7 +586,7 @@ def process_everything(
             # Generate reference smiles from squence
             try:
                 seq = sequences[ligand_residues[0].chain.id]
-                if 2 < len(seq) <= max_num_residues:
+                if MIN_NUM_RES_POLY < len(seq) <= MAX_NUM_RES_POLY:
                     ref_mol = mol_from_seq(seq)
                     ref_smi = Chem.MolToSmiles(ref_mol)
                     ref_name = 'seq:' + ','.join(seq)
@@ -638,12 +658,15 @@ def refine_structure_with_ligand(folder):
     
     for protein_pdb in glob.glob(os.path.join(folder, '*/*_protein.pdb')):
         ligand_sdf = protein_pdb.replace("_protein.pdb", "_ligand_fixed.sdf")
+        if VERBOSE:
+            print(f'Processing {protein_pdb}')
         fixer = StandardizedPDBFixer(protein_pdb=protein_pdb, ligand_sdf=ligand_sdf, pdb_id=pdb_id, verbose=False)
         fixer.runFixWorkflow(
             output_protein=protein_pdb.replace("_protein.pdb", "_protein_refined.pdb"),
             output_ligand=ligand_sdf.replace("_fixed.sdf", "_refined.sdf"),
             res_num_mapping=res_num_mapping,
-            refine_positions=True
+            refine_positions=True,
+            skip_long_missing_residues=MAX_ADD_MISSING_RES
         )
 
 
@@ -693,9 +716,10 @@ if __name__ == "__main__":
     parser.add_argument('-i', '--input', dest='input', help='input csv')
     parser.add_argument('-d', '--output', dest='output', help='output directory')
     parser.add_argument('--poly', dest='poly', action='store_true', help='if polymer csv')
-    args = parser.parse_args()
+    parser.add_argument('--serial', dest='serial', action='store_true', help='if run serially (not in parallel)')
+    input_args = parser.parse_args()
 
-    dataset_dir = args.output
+    dataset_dir = input_args.output
     if not os.path.isdir(dataset_dir):
         os.mkdir(dataset_dir)
 
@@ -710,9 +734,9 @@ if __name__ == "__main__":
                 f.write(errmsg)
 
     # Read CSV
-    df = pd.read_csv(args.input)
+    df = pd.read_csv(input_args.input, dtype=str)
     
-    if not args.poly:
+    if not input_args.poly:
         args = []
         for pdbid, subdf in df.groupby('PDBID'):
             ligand_info, ligand_ccd = [], None
@@ -724,17 +748,26 @@ if __name__ == "__main__":
             
             if len(ligand_info) == 0:
                 ligand_info = None
-                ligand_ccd = subdf['Ligand CCD'].iloc[0]
+                ligand_ccd = subdf['Ligand CCD'].unique().tolist()
             arg = (pdbid, ligand_ccd, ligand_info)
             args.append(arg)
     else:
         args = [(pdbid, None, None) for pdbid in df['PDBID'].unique()]
 
+    # done.tag / err exists means they have already been processed
+    newargs = []
+    for arg in args:
+        wdir = os.path.join(dataset_dir, arg[0])
+        if os.path.isfile(os.path.join(wdir, 'done.tag')) or os.path.isfile(os.path.join(wdir, 'err')):
+            continue
+        newargs.append(arg)
+    args = newargs
+
     for arg in args:
         if os.path.isdir(os.path.join(dataset_dir, arg[0])):
             shutil.rmtree(os.path.join(dataset_dir, arg[0]))
 
-    use_mpi = True
+    use_mpi = (not input_args.serial)
     if use_mpi:
         num_proc = 64
         chunksize = 1

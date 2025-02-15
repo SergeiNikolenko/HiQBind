@@ -7,12 +7,11 @@ This file contains factory functions related to query RCSB database
 import os
 import re
 import requests
-import urllib
-import wget
-import subprocess
+import json
+from bs4 import BeautifulSoup
 from rdkit import Chem
 
-    
+
 def download_file_request(url, local_filename):
     # Send a GET request to the URL
     with requests.get(url, stream=True) as r:
@@ -157,5 +156,88 @@ def download_ligand_sdf(
     download_file(url, fname, overwrite, raise_error)
     return fname
 
+
+with open(os.path.join(os.path.dirname(__file__), 'query.txt')) as f:
+    QUERY = f.read()
+
+def get_rcsb_data(pdb_id: str, output_path: str = "", raise_error: bool = True):
+    """
+    Query data  from RCSB
+
+    Parameters
+    ----------
+    comp_id: str
+        The ligand ID, usually a three-letter code
+    
+    Returns
+    -------
+    smi: str
+        The SMILES of the query ligand. If fail to get, will return a vacant string
+    """
+
+    url = "https://data.rcsb.org/graphql"
+    response = requests.post(url, json={'query': QUERY, 'variables': {"id": pdb_id}})
+    
+    if response.status_code == 200:
+        jdata = response.json()
+    else:
+        if raise_error:
+            raise Exception(f"Query failed with status code {response.status_code}: {response.text}")
+        else:
+            jdata = {}
+    
+    if jdata['data']['entry'] is None:
+        print(f"{pdb_id} is not valid, check if this is superseded.")
+        try:
+            text = requests.get(f'https://www.rcsb.org/structure/removed/{pdb_id}').text
+            soup = BeautifulSoup(text, 'html.parser')
+            new_pdbid = soup.find(id='note_obsoletedBy').find('a').text.lower()
+            print(f"{pdb_id} is superseded by {new_pdbid}.")
+        except:
+            new_pdbid = None
+            raise Exception(f'The provided PDB ID is obsolete and no superseding PDB id is found.')
+        
+        if new_pdbid:
+            jdata = get_rcsb_data(new_pdbid)
+    
+    if output_path:
+        with open(output_path, 'w') as f:
+            json.dump(jdata, f, indent=4)
+    return jdata
+    
+
 if __name__ == '__main__':
-    print(get_smiles_from_rcsb("PRD_001227"))
+    import os, glob, shutil
+    import multiprocessing as mp
+    from tqdm import tqdm
+    import time
+    from random import randint
+
+    dirpath = '../raw_data_pdbbind_sm'
+
+    def query_rcsb(pdbid):
+        jfile = os.path.join(dirpath, pdbid, 'rcsb_data.json')
+        # if os.path.isfile(jfile):
+        #     os.remove(jfile)
+        #     return (pdbid, True)
+
+        if os.path.isfile(jfile):
+            with open(jfile) as f:
+                jdata = json.load(f)
+            if jdata['data']['entry'] is not None:
+                return (pdbid, True)
+        
+        try:
+            get_rcsb_data(pdbid, jfile)
+            time.sleep(randint(1, 5))
+            return (pdbid, True)
+        except:
+            return (pdbid, False)
+
+    pdbids = list(os.listdir(dirpath))
+    with mp.Pool(16) as p:
+        results = list(tqdm(p.imap_unordered(query_rcsb, pdbids), total=len(pdbids)))
+    
+    for r in results:
+        if not r[1]:
+            print(r[0])
