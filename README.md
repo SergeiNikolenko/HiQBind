@@ -33,7 +33,7 @@ conda activate hiqbind-wf
 ## Dataset availability
 
 HiQBind datasets prepared by HiQBind workflow can be found in this [Figshare repoistory](https://doi.org/10.6084/m9.figshare.27430305).
-The HiQBind dataset is not diectly accessible now but we will find the best way to release it soon. Users can reproduce the HiQBind dataset following the instructions below.
+The optimzied PDBBind dataset (PDBBind-opt) is not diectly accessible due to license agreement but users can reproduce the HiQBind dataset following the instructions below.
 
 In this repository, we provide the [metadata](figshare/hiqbind_metadata.csv) of HiQBind and [list of PDB IDs](error_fix/) discarded by the workflow when preparing HiQBind and optimizing PDBBind.
 
