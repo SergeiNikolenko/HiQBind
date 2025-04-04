@@ -1,10 +1,15 @@
 # HiQBind Workflow
 
-[![arxiv](https://img.shields.io/badge/arXiv-2411.01223-blue)](https://arxiv.org/abs/2411.01223)
+[![DOI: 10.1039/D4DD00357H](https://img.shields.io/badge/DOI-10.1039%2FD4DD00357H-blue)](https://doi.org/10.1039/D4DD00357H)
 
 This repository contains scripts of HiQBind workflow, which organizes a bunch of open-source softwares to probe and fix structural problems in existing Protein-Ligand Datasets.
 
 ![workflow](assets/workflow.svg)
+
+### License and credits
+The HiQBind-WF workflow is open-sourced under MIT license. If you use this code in your work, please kindly cite:
++ Yingze Wang, Kunyang Sun, Jie Li, Xingyi Guan, Oufan Zhang, Dorian Bagni, Yang Zhang, Heather A. Carlson, and Teresa Head-Gordon. "A workflow to create a high-quality protein–ligand binding dataset for training, validation, and prediction tasks." *Digital Discovery* (2025). 
+
 
 ## Setting up and Installation
 
